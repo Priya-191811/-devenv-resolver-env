@@ -23,7 +23,7 @@ class DevEnvSimulator(Environment):
             "disk_space_mb": self.disk_space_mb
         }
 
-    def reset(self, task_id: str = "task-easy") -> DevEnvObservation:
+    def reset(self, task_id: str = "task-easy", **kwargs) -> DevEnvObservation:
         self.current_task_id = task_id
         self.step_count = 0
         self.installed_packages = {}
