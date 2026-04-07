@@ -51,7 +51,7 @@ class DevEnvSimulator(Environment):
             goal_prompt=f"{self.goal_prompt} | PERMISSIONS: {'OK' if self.permissions_fixed else 'LOCKED'}"
         )
 
-    def step(self, action: DevEnvAction) -> Tuple[DevEnvObservation, float, bool, Dict[str, Any]]:
+    def step(self, action: DevEnvAction, **kwargs) -> Tuple[DevEnvObservation, float, bool, Dict[str, Any]]:
         self.step_count += 1
         reward = 0.0
         done = False
