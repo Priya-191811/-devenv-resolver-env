@@ -1,20 +1,18 @@
-from pydantic import BaseModel, Field
 from typing import Literal, Dict, Optional
+from pydantic import Field
+from openenv_core.env_server import Action, Observation, State
 
-class DevEnvAction(BaseModel):
-    command: Literal["install", "uninstall", "check_status", "fix_permissions"] = Field(
-        description="The action the AI wants to take."
-    )
-    package_name: Optional[str] = Field(
-        default=None, 
-        description="Name of the package (e.g., 'django')."
-    )
-    version: Optional[str] = Field(
-        default=None, 
-        description="Version string (e.g., '4.2.1')."
-    )
+class DevEnvAction(Action):
+    command: Literal["install", "uninstall", "check_status", "fix_permissions"] = Field(description="Command")
+    package_name: Optional[str] = Field(default=None, description="Package name")
+    version: Optional[str] = Field(default=None, description="Version string")
 
-class DevEnvObservation(BaseModel):
-    terminal_output: str = Field(description="Console logs with system timestamps.")
-    currently_installed: Dict[str, str] = Field(description="Current system state.")
-    goal_prompt: str = Field(description="The primary objective and constraints.")
+class DevEnvObservation(Observation):
+    terminal_output: str = Field(default="", description="Console logs")
+    currently_installed: Dict[str, str] = Field(default_factory=dict, description="Current system state")
+    goal_prompt: str = Field(default="", description="The objective")
+
+class DevEnvState(State):
+    task_id: str = "task-easy"
+    permissions_fixed: bool = False
+    disk_space_mb: int = 1000
