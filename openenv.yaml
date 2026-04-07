@@ -1,0 +1,17 @@
+version: "1.0"
+environment:
+  name: "devenv-resolver"
+  description: "A simulated dependency management environment where agents must resolve package version conflicts."
+  observation_model: "models:DevEnvObservation"
+  action_model: "models:DevEnvAction"
+tasks:
+  - id: "task-easy"
+    description: "Install a specific package version into an empty environment."
+    difficulty: "easy"
+  - id: "task-medium"
+    description: "Install a package that requires upgrading an existing dependency."
+    difficulty: "medium"
+  - id: "task-hard"
+    description: "Resolve a circular dependency conflict to install the target packages."
+    difficulty: "hard"
+    entry_point: "env:DevEnvSimulator"
