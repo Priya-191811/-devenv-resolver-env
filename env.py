@@ -4,29 +4,43 @@ from typing import Tuple, Dict, Any
 
 class DevEnvSimulator(Environment):
     def __init__(self):
+        # Initialize all required attributes
         self.current_task_id = "task-easy"
         self.installed_packages = {}
         self.terminal_output = ""
         self.goal_prompt = ""
         self.step_count = 0
         self.max_steps = 10
-        self.disk_space_mb = 1000 # NEW: System Constraint
+        self.disk_space_mb = 1000 
+
+    def state(self) -> Dict[str, Any]:
+        """
+        MANDATORY: Returns the current internal state.
+        This fixes the 'abstract method state' error.
+        """
+        return {
+            "task_id": self.current_task_id,
+            "installed_packages": self.installed_packages,
+            "step_count": self.step_count,
+            "disk_space_mb": self.disk_space_mb
+        }
 
     def reset(self, task_id: str = "task-easy") -> DevEnvObservation:
         self.current_task_id = task_id
         self.step_count = 0
-        self.disk_space_mb = 1000
         self.installed_packages = {}
         
         if task_id == "task-easy":
             self.goal_prompt = "Install 'requests'==2.31. Environment is empty."
+            self.disk_space_mb = 1000
         elif task_id == "task-medium":
-            self.goal_prompt = "Install 'pandas'==2.0. Note: This requires 'numpy'==1.26."
+            self.goal_prompt = "Install 'pandas'==2.0. Note: Requires 'numpy'==1.26."
             self.installed_packages = {"numpy": "1.24"}
+            self.disk_space_mb = 800
         elif task_id == "task-hard":
-            self.goal_prompt = "Critical: System low on space. Resolve 'werkzeug' conflict and install 'flask'. Current space: 100MB."
+            self.goal_prompt = "Critical: System low on space. Resolve 'werkzeug' conflict and install 'flask'."
             self.installed_packages = {"werkzeug": "1.0", "temp_logs": "heavy_data"}
-            self.disk_space_mb = 100 # Low space trap!
+            self.disk_space_mb = 100 # Trap: Low space!
 
         self.terminal_output = f"System initialized. Free Space: {self.disk_space_mb}MB."
         return self._get_obs()
@@ -43,17 +57,17 @@ class DevEnvSimulator(Environment):
         reward = 0.0
         done = False
         
-        # LOGIC: Installation consumes space, Uninstallation frees it
+        # Action Logic: Install costs space, Uninstall saves it
         if action.command == "install":
             if self.disk_space_mb < 50:
-                self.terminal_output = "Error: Insufficient Disk Space. Action failed."
-                reward = -0.1 # Penalty for bad behavior
+                self.terminal_output = "Error: Insufficient Disk Space."
+                reward = -0.1
             else:
                 pkg = action.package_name
                 ver = action.version or "latest"
                 self.installed_packages[pkg] = ver
                 self.disk_space_mb -= 50
-                self.terminal_output = f"Installed {pkg}=={ver}. Space left: {self.disk_space_mb}MB."
+                self.terminal_output = f"Installed {pkg}=={ver}. Space: {self.disk_space_mb}MB."
             
         elif action.command == "uninstall":
             pkg = action.package_name
@@ -64,7 +78,7 @@ class DevEnvSimulator(Environment):
             else:
                 self.terminal_output = f"Error: {pkg} not found."
 
-        # GRADERS
+        # Graders
         if self.current_task_id == "task-easy" and self.installed_packages.get("requests") == "2.31":
             reward, done = 1.0, True
         elif self.current_task_id == "task-medium":
