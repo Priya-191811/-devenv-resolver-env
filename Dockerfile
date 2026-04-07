@@ -11,7 +11,7 @@ COPY . /app
 RUN pip install --no-cache-dir .
 
 # Expose the port that uvicorn will run on
-EXPOSE 8000
+EXPOSE 7860
 
 # The command to start your environment server
-CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
