@@ -41,9 +41,10 @@ class DevEnvSimulator(Environment):
             self.disk_space_mb = 200
             
         self.terminal_output = f"[{time.strftime('%H:%M:%S')}] System initialized. Storage: {self.disk_space_mb}MB."
-        return self._get_obs(done=False, reward=0.0)
+        # Start with a safe 0.01 instead of 0.0
+        return self._get_obs(done=False, reward=0.01)
 
-    def _get_obs(self, done: bool = False, reward: float = 0.0) -> DevEnvObservation:
+    def _get_obs(self, done: bool = False, reward: float = 0.01) -> DevEnvObservation:
         return DevEnvObservation(
             done=done,
             reward=reward,
@@ -54,13 +55,13 @@ class DevEnvSimulator(Environment):
 
     def step(self, action: DevEnvAction, **kwargs) -> DevEnvObservation:
         self.step_count += 1
-        reward = 0.0
+        reward = 0.01  # Safe floor value instead of 0.0
         done = False
         ts = time.strftime('%H:%M:%S')
 
         if action.command == "install" and random.random() < 0.1:
             self.terminal_output = f"[{ts}] ConnectionTimeout: Registry unreachable."
-            return self._get_obs(done=False, reward=-0.01)
+            return self._get_obs(done=False, reward=0.01)
 
         if action.command == "fix_permissions":
             self.permissions_fixed = True
@@ -68,10 +69,10 @@ class DevEnvSimulator(Environment):
         elif action.command == "install":
             if not self.permissions_fixed:
                 self.terminal_output = f"[{ts}] PermissionError."
-                reward = -0.1
+                reward = 0.01
             elif self.disk_space_mb < 50:
                 self.terminal_output = f"[{ts}] OSError: no space left."
-                reward = -0.1
+                reward = 0.01
             else:
                 pkg, ver = action.package_name, action.version or "latest"
                 self.installed_packages[pkg] = ver
@@ -86,19 +87,20 @@ class DevEnvSimulator(Environment):
             else:
                 self.terminal_output = f"[{ts}] {pkg} not found."
 
+        # Grader Logic updated to strict (0, 1) bounds
         if self.current_task_id == "task-easy":
             if self.installed_packages.get("requests") == "2.31":
-                reward, done = 1.0, True
+                reward, done = 0.99, True
         elif self.current_task_id == "task-medium":
             if self.installed_packages.get("pandas") == "2.0" and self.installed_packages.get("numpy") == "1.26":
-                reward, done = 1.0, True
+                reward, done = 0.99, True
             elif self.installed_packages.get("numpy") == "1.26":
-                reward = 0.5
+                reward = 0.50
         elif self.current_task_id == "task-hard":
             if self.installed_packages.get("django") == "4.2.1":
-                reward, done = 1.0, True
+                reward, done = 0.99, True
             elif self.installed_packages.get("django") == "4.2.0":
-                reward, done = 0.0, True 
+                reward, done = 0.01, True 
 
         if self.step_count >= self.max_steps: done = True
         return self._get_obs(done=done, reward=reward)
