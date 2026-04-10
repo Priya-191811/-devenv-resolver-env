@@ -8,11 +8,16 @@ class StepResult:
         self.done = done
 
 class DevEnvEnvironment:
+    # 🚨 THE FIX: Explicitly tell the framework this env is safe for concurrent graders
+    SUPPORTS_CONCURRENT_SESSIONS = True
+
     def __init__(self):
         self.current_task = "easy"
         self.steps = 0
         self.max_steps = 5
         self.state = {}
+
+    # ... (keep the rest of your reset and step functions exactly the same) ...
 
     def reset(self, task_id: str = "easy", **kwargs) -> StepResult:
         self.current_task = task_id
