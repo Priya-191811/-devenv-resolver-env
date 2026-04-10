@@ -1,18 +1,15 @@
-from typing import Literal, Dict, Optional
+from typing import Optional
 from pydantic import Field
-from openenv_core.env_server import Action, Observation, State
+from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
 
-class DevEnvAction(Action):
-    command: Literal["install", "uninstall", "check_status", "fix_permissions"] = Field(description="Command")
-    package_name: Optional[str] = Field(default=None, description="Package name")
-    version: Optional[str] = Field(default=None, description="Version string")
+class DevEnvAction(CallToolAction):
+    """Wraps the AI's shell action."""
+    command: str = Field(..., description="Action to perform: install, uninstall, fix_permissions, check_status")
+    package_name: Optional[str] = Field(None, description="Target package name (if applicable)")
+    version: Optional[str] = Field(None, description="Target package version (if applicable)")
 
-class DevEnvObservation(Observation):
-    terminal_output: str = Field(default="", description="Console logs")
-    currently_installed: Dict[str, str] = Field(default_factory=dict, description="Current system state")
-    goal_prompt: str = Field(default="", description="The objective")
-
-class DevEnvState(State):
-    task_id: str = "task-easy"
-    permissions_fixed: bool = False
-    disk_space_mb: int = 1000
+class DevEnvObservation(CallToolObservation):
+    """Wraps the terminal output returned to the AI."""
+    terminal_output: str = Field(..., description="Standard output or error logs from the terminal")
+    goal_prompt: str = Field(..., description="The objective the agent needs to achieve")
+    feedback: str = Field("", description="System feedback on the previous action")
