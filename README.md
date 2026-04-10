@@ -77,9 +77,7 @@ devenv-resolver/
     └── graders.py         # Deterministic scoring logic
 
 
-
-
-## 🚀 Quick Start & Setup
+### 🚀 Quick Start & Setup
 
 ### Local Execution
 Ensure you have Python 3.10+ installed.
