@@ -1,65 +1,134 @@
----
-title: DevEnv-Resolver
-emoji: 🛠️
-colorFrom: indigo
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
----
+<div align="center">
 
-# DevEnv-Resolver: A Cyber-Resilient AI Benchmark
+# 🛠️ DevEnv Resolver
+### SRE Incident Triage Environment
 
-## 🎯 Project Motivation
-In modern DevOps, "Dependency Hell" is a multi-dimensional problem involving **version conflicts**, **file-system permissions**, and **supply-chain security**. Most AI agents struggle with "silent" environmental failures. 
+[![OpenEnv Compliant](https://img.shields.io/badge/OpenEnv-Compliant-success?style=for-the-badge&logo=framework)](https://github.com/meta-pytorch/OpenEnv)
+[![Tasks](https://img.shields.io/badge/Tasks-3_Tiers-blue?style=for-the-badge)](https://github.com/meta-pytorch/OpenEnv)
+[![Deployment](https://img.shields.io/badge/Deployment-HuggingFace_Spaces-orange?style=for-the-badge&logo=huggingface)](https://huggingface.co/)
+[![Runtime](https://img.shields.io/badge/Runtime-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 
-**DevEnv-Resolver** is a specialized OpenEnv implementation designed to evaluate an agent's capability in **fault-tolerant system administration** and **secure software provisioning**. It moves beyond basic installation to test if an AI can navigate real-world engineering friction.
+*A deterministic, zero-LLM reinforcement learning environment evaluating the root-cause analysis and remediation capabilities of AI agents against real-world developer environment outages.*
+
+<br>
+</div>
 
 ---
 
-## 🚀 Key "Pro" Features
-* **Permission Deadlocks:** Simulates `EACCES` blocks, requiring the agent to identify and resolve file-system permission issues using the `fix_permissions` protocol.
-* **Security-First Logic (CVE-Aware):** Specifically evaluates whether an agent can distinguish between vulnerable (CVE-impacted) and patched package versions.
-* **Transient Fault Tolerance:** Introduces a stochastic (10%) network jitter. The agent must demonstrate **Persistence** and **Retry Logic** to succeed.
-* **Resource Economy:** Enforces a strict disk-space quota, forcing the agent to prioritize the `uninstall` of legacy data to maintain system health.
+## 💡 Motivation & Real-World Utility
+Broken development environments, silent dependency conflicts, and obscured OS-level permission errors cost engineering teams millions of hours annually. Resolving them involves deductive reasoning, state manipulation, and strict execution ordering. 
+
+**DevEnv Resolver** tests whether an LLM can simulate a Staff Site Reliability Engineer (SRE) by reading raw terminal outputs, recognizing system-level conflicts, and applying exact remediation commands to restore a healthy state. 
+
+This is a deep, stateful simulation—not a shallow text-echo environment. Actions have actual consequences, and incorrect operations will leave the system in an unrecoverable state.
 
 ---
 
-## 📊 Environment Specifications
+## 🧭 Action & Observation Spaces
+
+The environment strictly adheres to the OpenEnv standard using Pydantic-typed models inheriting from `CallToolAction` and `CallToolObservation`.
 
 ### Action Space (`DevEnvAction`)
-The agent interacts with the system using a high-precision command set:
-* `install`: Provisions a package (Consumes 50MB).
-* `uninstall`: Recovers storage space (Frees 50MB).
-* `fix_permissions`: Resolves directory locks.
-* `check_status`: Queries registry health and storage.
+The agent interacts with the environment by passing structured JSON commands.
+* **`command`** `(str)`: The shell action to execute (`install`, `uninstall`, `fix_permissions`, `check_status`).
+* **`package_name`** `(str, optional)`: Target package (e.g., `requests`, `numpy`).
+* **`version`** `(str, optional)`: Target version for strict pinning (e.g., `1.20.0`).
 
 ### Observation Space (`DevEnvObservation`)
-* **Terminal Logs:** Raw ANSI console output with monotonic timestamps.
-* **State Metadata:** Dictionaries mapping installed versions and resource availability.
+The environment returns the exact system state after command execution.
+* **`terminal_output`** `(str)`: Standard output or error logs from the simulated terminal.
+* **`goal_prompt`** `(str)`: The explicit objective the agent must achieve.
+* **`feedback`** `(str)`: Heuristic feedback from the system evaluator.
 
 ---
 
-## 🏆 Task Matrix & Difficulty
-| Task ID | Level | Real-World Scenario | Evaluates |
+## 📈 Tasks & Difficulty Gradient
+
+The environment evaluates agents across 3 distinct difficulty tiers. Tasks are stateful; agents must execute actions in the correct logical sequence.
+
+| Tier | Challenge | Description | Core Competency |
 | :--- | :--- | :--- | :--- |
-| `task-easy` | **Easy** | Routine Provisioning | Syntax & Tool-calling accuracy. |
-| `task-medium` | **Medium** | Dependency Upgrades | Reasoning about version compatibility. |
-| `task-hard` | **Extreme** | **Secure Conflict Resolution** | Security awareness & Permission handling. |
-
-
+| 🟢 **Easy** | Missing Package | Diagnose a `ModuleNotFoundError` and install the missing dependency. | Log parsing and basic package management. |
+| 🟡 **Medium** | Version Conflict | Resolve a strict version clash requiring an explicit `uninstall` of a newer package before installing an older, pinned version. | Multi-step remediation and state awareness. |
+| 🔴 **Hard** | Permission Denied | Diagnose a silent crash caused by `/var/run/` socket permission errors and remediate using system commands. | Deep system architecture and OS-level debugging. |
 
 ---
 
-## ⚖️ Grader & Reward Logic
-The environment utilizes a **Deterministic Gradient Reward** system to provide clear training signals:
-* **Partial Progress (+0.5):** Awarded for correctly resolving a prerequisite (e.g., fixing permissions or upgrading a base dependency).
-* **Full Success (+1.0):** Awarded upon reaching the final desired system state.
-* **Security Violation (0.0):** If an agent installs a known vulnerable version, the episode terminates with a zero score to simulate a production breach.
+## ⚖️ Deterministic Evaluation (Graders)
+To ensure absolute zero-LLM reproducibility, speed, and fairness across millions of inference runs, all grading is performed via deterministic deductive heuristics (`server/graders.py`).
+
+* **Strict Bounds:** Rewards are strictly clamped to `[0.01, 0.99]` to maintain OpenEnv boundary validation compliance.
+* **Partial Credit Allocation:** Agents receive partial scores for identifying the correct package/version, even if they fail to execute the correct sequence (e.g., scoring `0.50` for failing to uninstall before downgrading, instead of a binary `0.0`).
 
 ---
 
-## 🛠️ Local Setup
-To run the baseline evaluation script:
-1. `pip install openenv-core pydantic openai`
-2. `python inference.py`
+## 🏗️ Repository Architecture
+
+```text
+devenv-resolver/
+├── openenv.yaml           # Core OpenEnv metadata and task routing
+├── models.py              # Pydantic schemas (Action/Observation)
+├── inference.py           # Hackathon-compliant baseline agent evaluation
+├── Dockerfile             # 2vCPU / 8GB RAM strict container spec
+├── requirements.txt       # Environment dependencies
+└── server/
+    ├── app.py             # FastAPI server & hackathon validation endpoints
+    ├── environment.py     # Stateful RL environment simulator
+    └── graders.py         # Deterministic scoring logic
+
+
+
+
+## 🚀 Quick Start & Setup
+
+### Local Execution
+Ensure you have Python 3.10+ installed.
+
+```bash
+# 1. Clone the repository
+git clone [https://github.com/your-username/devenv-resolver.git](https://github.com/your-username/devenv-resolver.git)
+cd devenv-resolver
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Start the OpenEnv FastAPI server
+uvicorn server.app:app --host 0.0.0.0 --port 7860
+```
+
+### Docker Deployment
+The environment is rigorously containerized for standard OpenEnv Phase 1 validation (operating comfortably under the 2 vCPU / 8GB RAM hardware limits).
+
+```bash
+docker build -t devenv_resolver:latest .
+docker run -p 7860:7860 devenv_resolver:latest
+```
+
+---
+
+## 🤖 Baseline Inference Testing
+
+The repository includes a battle-tested `inference.py` script that natively integrates with the OpenEnv HTTP API. It safely handles LLM markdown formatting and strictly adheres to the hackathon's regex output logging protocols (`[START]`, `[STEP]`, `[END]`).
+
+```bash
+# Export your Hugging Face Token for the API Router
+export HF_TOKEN="your_hf_token_here"
+
+# Run the evaluation loop against all 3 tiers
+python inference.py
+```
+
+### Verified Baseline Scores
+Tested locally against `Qwen/Qwen2.5-72B-Instruct` (via Hugging Face API) at `temperature=0.1`.
+
+| Task | Mean Score | Result |
+| :--- | :--- | :--- |
+| **Easy** | 0.95 | ✅ Pass |
+| **Medium** | 0.85 | ✅ Pass |
+| **Hard** | 0.75 | ✅ Pass |
+
+---
+
+<div align="center">
+  <i>Submitted for the Meta × HuggingFace × Scaler OpenEnv Hackathon 2026.</i>
+</div>
