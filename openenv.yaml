@@ -1,17 +1,22 @@
-version: "1.0"
-environment:
-  name: "devenv-resolver"
-  description: "A simulated dependency management environment where agents must resolve package version conflicts."
-  observation_model: "models:DevEnvObservation"
-  action_model: "models:DevEnvAction"
+spec_version: 1
+name: devenv_resolver
+version: 1.0.0
+description: "A stateful SRE environment where agents resolve dependency conflicts, fix broken package trees, and remediate permission errors."
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
+tags:
+  - openenv
+  - sre
+  - devops
 tasks:
-  - id: "task-easy"
-    description: "Install a specific package version into an empty environment."
-    difficulty: "easy"
-  - id: "task-medium"
-    description: "Install a package that requires upgrading an existing dependency."
-    difficulty: "medium"
-  - id: "task-hard"
-    description: "Resolve a circular dependency conflict to install the target packages."
-    difficulty: "hard"
-    entry_point: "env:DevEnvSimulator"
+  - id: easy
+    description: "Diagnose and install a missing dependency."
+    grader: server.graders.grade_easy
+  - id: medium
+    description: "Resolve a strict version conflict requiring a downgrade."
+    grader: server.graders.grade_medium
+  - id: hard
+    description: "Remediate broken file permissions causing a silent crash."
+    grader: server.graders.grade_hard
