@@ -1,14 +1,14 @@
+from pydantic import BaseModel
 from models import DevEnvAction, DevEnvObservation
 
-class StepResult:
-    """Wrapper to comply with OpenEnv step returns."""
-    def __init__(self, observation: DevEnvObservation, reward: float, done: bool):
-        self.observation = observation
-        self.reward = reward
-        self.done = done
+# 🚨 THE FIX: Inheriting from BaseModel allows FastAPI to serialize this into JSON without crashing.
+class StepResult(BaseModel):
+    observation: DevEnvObservation
+    reward: float
+    done: bool
 
 class DevEnvEnvironment:
-    # 🚨 THE FIX: Explicitly tell the framework this env is safe for concurrent graders
+    # Explicitly tell the framework this env is safe for concurrent graders
     SUPPORTS_CONCURRENT_SESSIONS = True
 
     def __init__(self):
@@ -16,8 +16,6 @@ class DevEnvEnvironment:
         self.steps = 0
         self.max_steps = 5
         self.state = {}
-
-    # ... (keep the rest of your reset and step functions exactly the same) ...
 
     def reset(self, task_id: str = "easy", **kwargs) -> StepResult:
         self.current_task = task_id
