@@ -1,3 +1,15 @@
+---
+title: DevEnv Resolver
+emoji: 🛠️
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+license: mit
+short_description: OpenEnv SRE Debugging Simulator
+---
+
+
 <div align="center">
 
 # 🛠️ DevEnv Resolver
